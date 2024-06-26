@@ -44,22 +44,49 @@ class Company {
     return company;
   }
 
-  /** Find all companies.
+    /** Find all companies optionally filtered by criteria.
+   *
+   * Available filters:
+   * - name (partial, case-insensitive match)
+   * - minEmployees
+   * - maxEmployees
    *
    * Returns [{ handle, name, description, numEmployees, logoUrl }, ...]
    * */
 
-  static async findAll() {
-    const companiesRes = await db.query(
-          `SELECT handle,
-                  name,
-                  description,
-                  num_employees AS "numEmployees",
-                  logo_url AS "logoUrl"
-           FROM companies
-           ORDER BY name`);
-    return companiesRes.rows;
-  }
+    static async findAll({ name, minEmployees, maxEmployees } = {}) {
+      let query = `SELECT handle,
+                          name,
+                          description,
+                          num_employees AS "numEmployees",
+                          logo_url AS "logoUrl"
+                   FROM companies`;
+      let whereExpressions = [];
+      let queryValues = [];
+  
+      if (name !== undefined) {
+        queryValues.push(`%${name}%`);
+        whereExpressions.push(`name ILIKE $${queryValues.length}`);
+      }
+  
+      if (minEmployees !== undefined) {
+        queryValues.push(minEmployees);
+        whereExpressions.push(`num_employees >= $${queryValues.length}`);
+      }
+  
+      if (maxEmployees !== undefined) {
+        queryValues.push(maxEmployees);
+        whereExpressions.push(`num_employees <= $${queryValues.length}`);
+      }
+  
+      if (whereExpressions.length > 0) {
+        query += " WHERE " + whereExpressions.join(" AND ");
+      }
+  
+      query += " ORDER BY name";
+      const companiesRes = await db.query(query, queryValues);
+      return companiesRes.rows;
+    }
 
   /** Given a company handle, return data about company.
    *
