@@ -1,4 +1,4 @@
-const { sqlForPartialUpdate } = require('./path/to/helpers/sql');
+const { sqlForPartialUpdate } = require('./sql');
 const { BadRequestError } = require('../expressError');
 
 describe("sqlForPartialUpdate", () => {

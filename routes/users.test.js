@@ -1,8 +1,7 @@
 "use strict";
 
 const request = require("supertest");
-
-const db = require("../db.js");
+const db = require("../db");
 const app = require("../app");
 const User = require("../models/user");
 
@@ -11,7 +10,6 @@ const {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
-  u1Token,
 } = require("./_testCommon");
 
 beforeAll(commonBeforeAll);
@@ -42,7 +40,8 @@ describe("POST /users", function () {
         lastName: "Last-newL",
         email: "new@email.com",
         isAdmin: false,
-      }, token: expect.any(String),
+      },
+      token: expect.any(String),
     });
   });
 
@@ -66,7 +65,8 @@ describe("POST /users", function () {
         lastName: "Last-newL",
         email: "new@email.com",
         isAdmin: true,
-      }, token: expect.any(String),
+      },
+      token: expect.any(String),
     });
   });
 
@@ -92,6 +92,7 @@ describe("POST /users", function () {
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
+    expect(resp.body.error.message).toEqual(expect.any(String)); // Better error handling
   });
 
   test("bad request if invalid data", async function () {
@@ -107,6 +108,7 @@ describe("POST /users", function () {
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
+    expect(resp.body.error.message).toEqual(expect.any(String)); // Better error handling
   });
 });
 
@@ -117,6 +119,7 @@ describe("GET /users", function () {
     const resp = await request(app)
         .get("/users")
         .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(200);
     expect(resp.body).toEqual({
       users: [
         {
@@ -145,20 +148,26 @@ describe("GET /users", function () {
   });
 
   test("unauth for anon", async function () {
-    const resp = await request(app)
-        .get("/users");
+    const resp = await request(app).get("/users");
     expect(resp.statusCode).toEqual(401);
   });
 
-  test("fails: test next() handler", async function () {
-    // there's no normal failure event which will cause this route to fail ---
-    // thus making it hard to test that the error-handler works with it. This
-    // should cause an error, all right :)
+  test("fails gracefully when users table is missing", async function () {
     await db.query("DROP TABLE users CASCADE");
     const resp = await request(app)
         .get("/users")
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(500);
+    await db.query(`
+      CREATE TABLE users (
+        username TEXT PRIMARY KEY,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        password TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        is_admin BOOLEAN DEFAULT FALSE
+      )
+    `);
   });
 });
 
@@ -169,6 +178,7 @@ describe("GET /users/:username", function () {
     const resp = await request(app)
         .get(`/users/u1`)
         .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(200);
     expect(resp.body).toEqual({
       user: {
         username: "u1",
@@ -204,6 +214,7 @@ describe("PATCH /users/:username", () => {
           firstName: "New",
         })
         .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(200);
     expect(resp.body).toEqual({
       user: {
         username: "u1",
@@ -242,6 +253,7 @@ describe("PATCH /users/:username", () => {
         })
         .set("authorization", `Bearer ${u1Token}`);
     expect(resp.statusCode).toEqual(400);
+    expect(resp.body.error.message).toEqual(expect.any(String)); // Better error handling
   });
 
   test("works: set new password", async function () {
@@ -251,6 +263,7 @@ describe("PATCH /users/:username", () => {
           password: "new-password",
         })
         .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(200);
     expect(resp.body).toEqual({
       user: {
         username: "u1",
@@ -272,6 +285,7 @@ describe("DELETE /users/:username", function () {
     const resp = await request(app)
         .delete(`/users/u1`)
         .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(200);
     expect(resp.body).toEqual({ deleted: "u1" });
   });
 

@@ -4,7 +4,6 @@
 
 const jsonschema = require("jsonschema");
 const express = require("express");
-
 const { BadRequestError } = require("../expressError");
 const { ensureLoggedIn, ensureAdmin } = require("../middleware/auth");
 const Company = require("../models/company");
@@ -14,8 +13,7 @@ const companyUpdateSchema = require("../schemas/companyUpdate.json");
 
 const router = new express.Router();
 
-
-/** POST / { company } =>  { company }
+/** POST / { company } => { company }
  *
  * company should be { handle, name, description, numEmployees, logoUrl }
  *
@@ -23,7 +21,6 @@ const router = new express.Router();
  *
  * Authorization required: login
  */
-
 router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, companyNewSchema);
@@ -49,10 +46,9 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
  *
  * Authorization required: none
  */
-
 router.get("/", async function (req, res, next) {
   try {
-    const { name, minEmployees, macEmployees } = req.query;
+    const { name, minEmployees, maxEmployees } = req.query;
 
     // Validate minEmployees and maxEmployees if both are provided
     if (minEmployees !== undefined && maxEmployees !== undefined) {
@@ -62,7 +58,7 @@ router.get("/", async function (req, res, next) {
     }
 
     // Call the model method with filters
-    const companies = await Company.findAll({ name, minEmployees, maxEmployees});
+    const companies = await Company.findAll({ name, minEmployees, maxEmployees });
     return res.json({ companies });
   } catch (err) {
     return next(err);
@@ -76,7 +72,6 @@ router.get("/", async function (req, res, next) {
  *
  * Authorization required: none
  */
-
 router.get("/:handle", async function (req, res, next) {
   try {
     const company = await Company.get(req.params.handle);
@@ -90,13 +85,12 @@ router.get("/:handle", async function (req, res, next) {
  *
  * Patches company data.
  *
- * fields can be: { name, description, numEmployees, logo_url }
+ * fields can be: { name, description, numEmployees, logoUrl }
  *
- * Returns { handle, name, description, numEmployees, logo_url }
+ * Returns { handle, name, description, numEmployees, logoUrl }
  *
  * Authorization required: login
  */
-
 router.patch("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, companyUpdateSchema);
@@ -116,7 +110,6 @@ router.patch("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res, 
  *
  * Authorization: login
  */
-
 router.delete("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
   try {
     await Company.remove(req.params.handle);
@@ -125,6 +118,5 @@ router.delete("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res,
     return next(err);
   }
 });
-
 
 module.exports = router;
