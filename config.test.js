@@ -5,8 +5,8 @@ describe("config can come from env", function () {
     // Set environment variables before running tests
     process.env.SECRET_KEY = "abc";
     process.env.PORT = "3000";
-    process.env.DATABASE_URL = "postgresql:///jobly";
     process.env.NODE_ENV = "test"; // Ensure the test environment is set
+    process.env.DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/jobly_test"; // Set DATABASE_URL for test
   });
 
   afterAll(() => {
@@ -23,7 +23,7 @@ describe("config can come from env", function () {
     // Test that environment variables are correctly loaded
     expect(config.SECRET_KEY).toEqual("abc");
     expect(config.PORT).toEqual(3000);
-    expect(config.getDatabaseUri()).toEqual("postgresql:///jobly_test"); // Adjusted for test environment
+    expect(config.getDatabaseUri()).toEqual("postgresql://postgres:postgres@localhost:5432/jobly_test"); // Adjusted for test environment
     expect(config.BCRYPT_WORK_FACTOR).toEqual(1); // Adjusted for test environment
   });
 });

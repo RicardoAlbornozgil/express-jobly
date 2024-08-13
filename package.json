@@ -12,7 +12,8 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "config.js"
-    ]
+    ],
+    "verbose": true
   },
   "keywords": [],
   "author": "",

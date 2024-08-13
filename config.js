@@ -6,12 +6,12 @@ require("dotenv").config();
 require("colors");
 
 const SECRET_KEY = process.env.SECRET_KEY || "secret-dev";
-const PORT = parseInt(process.env.PORT, 10) || 3000;
+const PORT = +process.env.PORT || 3001;
 
 // Use dev database, testing database, or via env var, production database
 function getDatabaseUri() {
   return process.env.NODE_ENV === "test"
-    ? "postgresql:///jobly_test"
+    ? "postgresql://postgres:postgres@localhost:5432/jobly_test"
     : process.env.DATABASE_URL || "postgresql:///jobly";
 }
 

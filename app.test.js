@@ -16,21 +16,21 @@ afterAll(async () => {
 });
 
 // Test for handling 404 errors
-test("not found for site 404", async () => {
-  const resp = await request(app).get("/no-such-path");
-  expect(resp.statusCode).toBe(404);
+test("should return 404 for unknown paths", async () => {
+  const response = await request(app).get("/no-such-path");
+  expect(response.statusCode).toBe(404);
 });
 
 // Test for handling 404 errors with stack trace print disabled
-test("not found for site 404 (test stack print)", async () => {
+test("should return 404 for unknown paths with stack trace suppressed", async () => {
   // Save the original NODE_ENV
   const originalNodeEnv = process.env.NODE_ENV;
 
-  // Set NODE_ENV to an empty string
+  // Temporarily set NODE_ENV to an empty string to suppress stack trace in the error handler
   process.env.NODE_ENV = "";
 
-  const resp = await request(app).get("/no-such-path");
-  expect(resp.statusCode).toBe(404);
+  const response = await request(app).get("/no-such-path");
+  expect(response.statusCode).toBe(404);
 
   // Restore the original NODE_ENV
   process.env.NODE_ENV = originalNodeEnv;

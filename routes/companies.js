@@ -4,24 +4,28 @@
 
 const jsonschema = require("jsonschema");
 const express = require("express");
+
 const { BadRequestError } = require("../expressError");
-const { ensureLoggedIn, ensureAdmin } = require("../middleware/auth");
+const { ensureAdmin } = require("../middleware/auth");
 const Company = require("../models/company");
 
 const companyNewSchema = require("../schemas/companyNew.json");
 const companyUpdateSchema = require("../schemas/companyUpdate.json");
+const companySearchSchema = require("../schemas/companySearch.json");
 
 const router = new express.Router();
 
-/** POST / { company } => { company }
+
+/** POST / { company } =>  { company }
  *
  * company should be { handle, name, description, numEmployees, logoUrl }
  *
  * Returns { handle, name, description, numEmployees, logoUrl }
  *
- * Authorization required: login
+ * Authorization required: admin
  */
-router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
+
+router.post("/", ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, companyNewSchema);
     if (!validator.valid) {
@@ -46,19 +50,21 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
  *
  * Authorization required: none
  */
-router.get("/", async function (req, res, next) {
-  try {
-    const { name, minEmployees, maxEmployees } = req.query;
 
-    // Validate minEmployees and maxEmployees if both are provided
-    if (minEmployees !== undefined && maxEmployees !== undefined) {
-      if (parseInt(minEmployees) > parseInt(maxEmployees)) {
-        throw new BadRequestError("minEmployees cannot be greater than maxEmployees.");
-      }
+router.get("/", async function (req, res, next) {
+  const q = req.query;
+  // arrive as strings from querystring, but we want as ints
+  if (q.minEmployees !== undefined) q.minEmployees = +q.minEmployees;
+  if (q.maxEmployees !== undefined) q.maxEmployees = +q.maxEmployees;
+
+  try {
+    const validator = jsonschema.validate(q, companySearchSchema);
+    if (!validator.valid) {
+      const errs = validator.errors.map(e => e.stack);
+      throw new BadRequestError(errs);
     }
 
-    // Call the model method with filters
-    const companies = await Company.findAll({ name, minEmployees, maxEmployees });
+    const companies = await Company.findAll(q);
     return res.json({ companies });
   } catch (err) {
     return next(err);
@@ -72,6 +78,7 @@ router.get("/", async function (req, res, next) {
  *
  * Authorization required: none
  */
+
 router.get("/:handle", async function (req, res, next) {
   try {
     const company = await Company.get(req.params.handle);
@@ -85,13 +92,14 @@ router.get("/:handle", async function (req, res, next) {
  *
  * Patches company data.
  *
- * fields can be: { name, description, numEmployees, logoUrl }
+ * fields can be: { name, description, numEmployees, logo_url }
  *
- * Returns { handle, name, description, numEmployees, logoUrl }
+ * Returns { handle, name, description, numEmployees, logo_url }
  *
- * Authorization required: login
+ * Authorization required: admin
  */
-router.patch("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
+
+router.patch("/:handle", ensureAdmin, async function (req, res, next) {
   try {
     const validator = jsonschema.validate(req.body, companyUpdateSchema);
     if (!validator.valid) {
@@ -108,9 +116,10 @@ router.patch("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res, 
 
 /** DELETE /[handle]  =>  { deleted: handle }
  *
- * Authorization: login
+ * Authorization: admin
  */
-router.delete("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
+
+router.delete("/:handle", ensureAdmin, async function (req, res, next) {
   try {
     await Company.remove(req.params.handle);
     return res.json({ deleted: req.params.handle });
@@ -118,5 +127,6 @@ router.delete("/:handle", ensureLoggedIn, ensureAdmin, async function (req, res,
     return next(err);
   }
 });
+
 
 module.exports = router;
